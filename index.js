@@ -8,8 +8,9 @@ var serverPort = 8080;
 //declaration of the server controllers
 var LoginController = require(path.join(__dirname, 'controllers/Login')); 
 var TasksController = require(path.join(__dirname, 'controllers/Tasks'));
-var UsersController = require(path.join(__dirname, 'controllers/Users'));
 var AssignedTasksController = require(path.join(__dirname, 'controllers/AssignedTasks'));
+var TaskImagesController = require(path.join(__dirname, 'controllers/TaskImages'));
+var UsersController = require(path.join(__dirname, 'controllers/Users'));
 
 // swaggerRouter + express + passport configurations
 var options = {
@@ -65,6 +66,12 @@ app.get('/api/tasks/:taskId/assignedTo', passport.authenticate('jwt', {session: 
 app.put('/api/tasks/:taskId/assignedTo/:userId', passport.authenticate('jwt', {session: false}), AssignedTasksController.tasksTaskIdAssignedToUserIdPUT);
 app.delete('/api/tasks/:taskId/assignedTo/:userId', passport.authenticate('jwt', {session: false}), AssignedTasksController.tasksTaskIdAssignedToUserIdDELETE);
 
+ 
+
+app.get('/api/tasks/:taskId/images', passport.authenticate('jwt', {session: false}), TaskImagesController.tasksTaskIdImagesGET);
+app.get('/api/tasks/:taskId/:taskId/images/:imageId', passport.authenticate('jwt', {session: false}), TaskImagesController.tasksTaskIdImagesImageIdGET);
+app.post('/api/tasks/:taskId/images', passport.authenticate('jwt', {session: false}), validate({ body: taskSchema }), TaskImagesController.tasksTaskIdImagesPOST);
+app.delete('/api/tasks/:taskId/images/:imageId', passport.authenticate('jwt', {session: false}), TaskImagesController.tasksTaskIdImagesImageIdDELETE);
 
 // Initialize the Swagger middleware
 http.createServer(app).listen(serverPort, function () {
