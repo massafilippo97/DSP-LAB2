@@ -45,6 +45,21 @@ app.use(function(err, req, res, next) {
     next(err);
 });
 
+const multer  = require('multer'); //declaration of the middleware useful to handle multipart/form-data type POST requests
+const storage = multer.diskStorage({
+  destination: function(req,file,cb){
+    cb(null,'./task_images');
+  },
+  filename: function (req, file, cb) {
+    let format = file.mimetype.substring(6);
+    if(format === 'jpeg') format = "jpg";
+    const uniqueSuffix = Date.now() + '-' + (Math.round(Math.random() * 1E9) + "." + format )
+    cb(null, 'image-' + uniqueSuffix)
+  }
+});
+
+const upload = multer({storage : storage}); 
+
 
 app.post('/api/login', LoginController.loginPOST);
 //app.delete('/api/login', LoginController.loginDELETE);
@@ -68,9 +83,11 @@ app.delete('/api/tasks/:taskId/assignedTo/:userId', passport.authenticate('jwt',
 
  
 
-app.get('/api/tasks/:taskId/images', passport.authenticate('jwt', {session: false}), TaskImagesController.tasksTaskIdImagesGET);
+//app.get('/api/tasks/:taskId/images', passport.authenticate('jwt', {session: false}), TaskImagesController.tasksTaskIdImagesGET);
 app.get('/api/tasks/:taskId/:taskId/images/:imageId', passport.authenticate('jwt', {session: false}), TaskImagesController.tasksTaskIdImagesImageIdGET);
-app.post('/api/tasks/:taskId/images', passport.authenticate('jwt', {session: false}), validate({ body: taskSchema }), TaskImagesController.tasksTaskIdImagesPOST);
+app.post('/api/tasks/:taskId/images', passport.authenticate('jwt', {session: false}), upload.single('uploadedImage'), TaskImagesController.tasksTaskIdImagesPOST);
+// req.file is the name of your file in the form above, here 'uploaded_file'
+// req.body will hold the text fields, if there were any
 app.delete('/api/tasks/:taskId/images/:imageId', passport.authenticate('jwt', {session: false}), TaskImagesController.tasksTaskIdImagesImageIdDELETE);
 
 // Initialize the Swagger middleware
