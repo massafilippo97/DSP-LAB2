@@ -2,42 +2,6 @@
 
 const db = require('../db.js');
 
-/**
- * Retrieve the list of all the assignes of that task
- *
- * taskId Long Task id to delete
- * returns List
- *
-exports.tasksTaskIdImagesGET = function(taskId) {
-  return new Promise(function(resolve, reject) {
-    var sql_query = "select u.id, u.email, u.name from users u, assignments a where a.user = u.id AND a.task = ?;";
-
-    db.all(sql_query, [taskId], (err, rows) =>{ 
-      if(err) {
-        reject(err);
-        return;
-      }
-      if(rows.length === 0) {
-        reject("taskId not found");
-        return;
-      }
-      resolve(rows.map((row) => ({ 
-        id: row.id, 
-        email: row.email, 
-        name: row.name, //dovrei rendere accessibili le risorse utente globali?
-        _links: {
-          self: {href: "http://localhost:8080/users/"+row.id},
-          tasks: {href: "http://localhost:8080/tasks"},
-          task: {href: "http://localhost:8080/tasks/{taskId}"},
-          assignedTo: {href: "http://localhost:8080/tasks/{taskId}/assignedTo"},
-          markTask: {href: "http://localhost:8080/tasks/{taskId}/markTask"},
-          login: {href: "http://localhost:8080/login"}
-        }
-      })));
-    });
-  }); 
-}*/
-
 
 //search the max possible id from all registered tasks (useful when automatically assigning a new taskID)
 exports.searchMaxID = () => {
@@ -78,8 +42,8 @@ exports.searchMaxID = () => {
           return;
         } 
         resolve(rows.map((row) => ({ 
-          id: rows[0].id,
-          task_id: rows[0].task_id,
+          id: taskId,
+          task_id: imageId,
           file_name: rows[0].file_name, 
           format: rows[0].format,
           _links: {

@@ -84,7 +84,7 @@ app.delete('/api/tasks/:taskId/assignedTo/:userId', passport.authenticate('jwt',
  
 
 //app.get('/api/tasks/:taskId/images', passport.authenticate('jwt', {session: false}), TaskImagesController.tasksTaskIdImagesGET);
-app.get('/api/tasks/:taskId/:taskId/images/:imageId', passport.authenticate('jwt', {session: false}), TaskImagesController.tasksTaskIdImagesImageIdGET);
+app.get('/api/tasks/:taskId/images/:imageId', passport.authenticate('jwt', {session: false}), TaskImagesController.tasksTaskIdImagesImageIdGET);
 app.post('/api/tasks/:taskId/images', passport.authenticate('jwt', {session: false}), upload.single('uploadedImage'), TaskImagesController.tasksTaskIdImagesPOST);
 // req.file is the name of your file in the form above, here 'uploaded_file'
 // req.body will hold the text fields, if there were any
