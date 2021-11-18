@@ -2,7 +2,7 @@ const protoLoader = require('@grpc/proto-loader');
 const grpcLibrary = require('grpc');
 const REMOTE_URL = "localhost:50051";
 var fs = require('fs');
-const { rejects } = require('assert');
+
 
 let options = {
     keepCase: true, //Preserve field names. The default is to change them to camel case.
@@ -19,48 +19,44 @@ const packageObject = grpcLibrary.loadPackageDefinition(packageDefinition);
 let conversion = packageObject.conversion;
 let conversionService = new conversion.Converter(REMOTE_URL, grpcLibrary.credentials.createInsecure());
 
-function main() { //test per verificare come funziona gRPC
+module.exports.executeConversion = async function executeConversion(originalFileName, originalFormat, newFormat) { 
+  return new Promise((resolve, reject) => {
+    let connection = conversionService.fileConvert();
 
-  let connection = conversionService.fileConvert();
+    binary = fs.readFileSync('./task_images/'+originalFileName+'.'+originalFormat); 
+    
+    var wstream = fs.createWriteStream('./task_images/'+originalFileName+'.'+newFormat);
 
-  
-  binary = fs.readFileSync('./TaskImages/image.jpg');
+    connection.on('data', function(chunk){ //converted image + resultmetadata, sent as a series of chunks
+      if(chunk.meta !== undefined ){
+        if(!chunk.meta.success) 
+          reject("The conversion attempt has failed!"); 
+      }
+      else
+        wstream.write(chunk.file);
+    });
 
-  var wstream = fs.createWriteStream('./TaskImages/convertedImage.png');
+    connection.on('end', function() {  // The java server has finished sending
+      wstream.end(); 
+      resolve(null);
+    });
 
-  connection.on('data', function(chunk){ 
-    //converted image + resultmetadata, sent as a series of chunks
-    if(chunk.meta !== undefined){
-      console.log(chunk.meta.success);
-    }
-    else
-      wstream.write(chunk.file); //come distringuere
+    connection.on('error', function(e) {
+      reject(e);// An error has occurred and the stream has been closed.
+    });
+     
+
+
+    connection.write({meta: {file_type_origin: originalFormat, file_type_target: newFormat}});
+
+    reader = fs.createReadStream('./task_images/'+originalFileName+'.'+originalFormat);
+    
+    reader.on('data', function (chunk) { // Read per chunk and send it to the gRPC service
+      connection.write({file: chunk}); 
+    });
+
+    reader.on('end', function() {  // The node.js server has finished sending
+      connection.end();
+    });
   });
-
-  connection.on('end', function() {  // The server has finished sending
-    wstream.end(); 
-  });
-
-  connection.on('error', function(e) {
-    console.log(e);// An error has occurred and the stream has been closed.
-  });
-  
-  //wstream.on('close')
-
-  for (let index = 0; index < binary.length; index+=1024) {
-    if(index === 0){
-      //let metadata = {file_type_origin: "jpg", file_type_target: "png"};
-      connection.write({meta: {file_type_origin: "jpg", file_type_target: "png"}});
-    }
-    else{
-      connection.write({file: binary.slice(index-1024, index)});
-    }
-  } 
-  connection.end();
 }
- 
-
- 
-//main();
- 
-

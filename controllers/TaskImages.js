@@ -3,7 +3,7 @@
 //var utils = require('../utils/writer.js');
 var Tasks = require('../service/TasksService');
 var TaskImages = require('../service/TaskImagesService');
-var converterService = require('../gRPC_converter.js');  
+var conversionService = require('../gRPC_converter.js');  
 var fs = require('fs');
 const path = require('path');
 
@@ -54,9 +54,30 @@ module.exports.tasksTaskIdImagesImageIdDELETE = async function tasksTaskIdImages
       const checkOwner = await Tasks.checkTaskOwner(req.params.taskId, req.user.id); //req.user.id, 1
       if(checkOwner) { 
         const response = await TaskImages.tasksTaskIdImagesImageIdGET(req.params.imageId, req.params.taskId);
-        
-        let imagePath = path.join(__dirname, '../task_images/'+response[0].file_name+"."+response[0].format);
-        res.sendFile(imagePath);
+
+        let newFormat = req.header('accept').substring(6);
+
+        if(newFormat !== 'jpeg' && newFormat !== 'gif' && newFormat !== 'png')
+          throw new Error('406'); //Not acceptable 
+
+        newFormat = newFormat === 'jpeg' ? 'jpg' : newFormat;
+
+        if(newFormat === response[0].format){
+          let imagePath = path.join(__dirname, '../task_images/'+response[0].file_name+"."+response[0].format);
+          res.sendFile(imagePath);
+        }
+        else{ //request conversion
+          await conversionService.executeConversion(response[0].file_name,response[0].format, newFormat);
+          //esegui query per modificare il formato
+          //rimuovi vecchia immagine e vedi se hai usogno di rinominare robe
+          await TaskImages.updateImageExtension(req.params.imageId, newFormat);
+          
+          let imagePath = path.join(__dirname, '../task_images/'+response[0].file_name+"."+response[0].format);
+          fs.unlinkSync(imagePath);
+
+          imagePath = path.join(__dirname, '../task_images/'+response[0].file_name+"."+newFormat);
+          res.sendFile(imagePath);
+        } 
       }
       else { 
         throw new Error('403'); //Forbidden
@@ -64,10 +85,13 @@ module.exports.tasksTaskIdImagesImageIdDELETE = async function tasksTaskIdImages
     } catch(err) {
       if(err.message === '403')
         res.status(403).json({ error: "Forbidden: can't fetch because you are not the task's owner"});
+      if(err.message === '406')
+        res.status(406).json({ error: "Not acceptable: you can only request jpeg / jpg, png or gif image formats."});
       else if(err === "taskId not found")
         res.status(404).json({ error: "Task Not found: can't fetch because the inserted task id does not exists"}); 
-      else
-        res.status(503).json({ error: response.message});
+      else {
+        res.status(503).json({ error: err});
+      }
     }
   };
   

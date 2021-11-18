@@ -18,6 +18,20 @@ exports.searchMaxID = () => {
 }
 
 
+exports.updateImageExtension = function(imageId, format) {
+  return new Promise((resolve, reject) => {
+    const sql_query =  "UPDATE task_images SET format=? WHERE id=?";  
+    db.run(sql_query, [format,imageId], (err, rows)=>{
+      if(err) {
+        reject(err);
+        return;
+      }
+      resolve(null);
+    });
+  });
+}
+
+
 /**
  * Retrieve the specific tasks by its ID
  *
