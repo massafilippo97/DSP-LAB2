@@ -1,6 +1,6 @@
 'use strict';
 
-const db = require('../db.js');
+const db = require('../components/db.js');
 const bcrypt = require('bcrypt');
 
 /**

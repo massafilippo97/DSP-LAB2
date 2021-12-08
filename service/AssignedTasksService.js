@@ -1,6 +1,20 @@
 'use strict';
 
-const db = require('../db.js');
+const db = require('../components/db.js');
+
+const links = { 
+  tasks: {href: "http://localhost:8080/tasks", methods: ["GET", "POST"]},
+  publicTasks: {href: "http://localhost:8080/tasks/public", methods: ["GET"]},
+  createdByMeTasks: {href: "http://localhost:8080/tasks/createdByMe", methods: ["GET"]},
+  assignedToMeTasks: {href: "http://localhost:8080/tasks/assignedToMe", methods: ["GET"]},
+  task: {href: "http://localhost:8080/tasks/{taskId}", methods: ["GET", "DELETE"]},
+  assignedTo: {href: "http://localhost:8080/tasks/{taskId}/assignedTo[/{userId}]", methods: ["GET", "POST", "DELETE"]},
+  markTask: {href: "http://localhost:8080/tasks/{taskId}/markTask", methods: ["PUT"]},
+  users: {href: "http://localhost:8080/users/", methods: ["GET" ]},
+  user: {href: "http://localhost:8080/users/{userId}", methods: ["GET"]},
+  login: {href: "http://localhost:8080/login", methods: ["POST"]},
+  logout: {href: "http://localhost:8080/logout", methods: ["POST"]}
+};
 
 /**
  * Retrieve the list of all the assignes of that task
@@ -21,19 +35,19 @@ exports.tasksTaskIdAssignedToGET = function(taskId) {
         reject("taskId not found");
         return;
       }
-      resolve(rows.map((row) => ({ 
+      let users = rows.map((row) => ({ 
         id: row.id, 
         email: row.email, 
-        name: row.name, //dovrei rendere accessibili le risorse utente globali?
-        _links: {
-          self: {href: "http://localhost:8080/users/"+row.id},
-          tasks: {href: "http://localhost:8080/tasks"},
-          task: {href: "http://localhost:8080/tasks/{taskId}"},
-          assignedTo: {href: "http://localhost:8080/tasks/{taskId}/assignedTo"},
-          markTask: {href: "http://localhost:8080/tasks/{taskId}/markTask"},
-          login: {href: "http://localhost:8080/login"}
-        }
-      })));
+        name: row.name
+      }));
+
+      let linksList = Object.assign({}, links);
+      delete linksList.assignedTo; 
+
+      resolve({
+        users: users,
+        _links: { linksList }
+      });
     });
   }); 
 }

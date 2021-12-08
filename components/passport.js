@@ -1,6 +1,6 @@
 'use strict';
 var path = require('path');
-var LoginService = require(path.join(__dirname, 'service/LoginService')); 
+var LoginService = require(path.join(__dirname, '../service/LoginService')); 
 
 /*** Set up Passport ***/
 const passport = require('passport'); // auth middleware

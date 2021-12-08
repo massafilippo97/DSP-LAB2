@@ -1,6 +1,6 @@
 'use strict';
 
-const db = require('../db.js');
+const db = require('../components/db.js');
 
 
 //search the max possible id from all registered tasks (useful when automatically assigning a new taskID)

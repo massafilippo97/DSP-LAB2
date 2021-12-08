@@ -16,3 +16,18 @@ module.exports.usersIdGET = function usersIdGET (req, res, next) {
         res.status(503).json({ error: response}); //riporta l'errore sql generico
     });
 };
+
+
+module.exports.usersGET = function usersGET (req, res, next) {
+  Users.usersGET()
+    .then(function (response) {
+      if(!response){
+        utils.writeJson(res, response, 404);
+     } else {
+       utils.writeJson(res, response);
+    }
+    })
+    .catch(function (response) {
+      utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': response }],}, 500);
+    });
+};

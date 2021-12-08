@@ -11,8 +11,8 @@ let options = {
     defaults: true, //Set default values on output objects. Defaults to false.
     oneofs: true    //Set virtual oneof properties to the present field's name. Defaults to false.
 };
-
-let protoFileName = './conversion.proto';
+ 
+let protoFileName = __dirname + '/../conversion.proto';
  
 const packageDefinition = protoLoader.loadSync(protoFileName, options);
 const packageObject = grpcLibrary.loadPackageDefinition(packageDefinition);
@@ -23,9 +23,9 @@ module.exports.executeConversion = async function executeConversion(originalFile
   return new Promise((resolve, reject) => {
     let connection = conversionService.fileConvert();
 
-    binary = fs.readFileSync('./task_images/'+originalFileName+'.'+originalFormat); 
+    binary = fs.readFileSync('../task_images/'+originalFileName+'.'+originalFormat); 
     
-    var wstream = fs.createWriteStream('./task_images/'+originalFileName+'.'+newFormat);
+    var wstream = fs.createWriteStream('../task_images/'+originalFileName+'.'+newFormat);
 
     connection.on('data', function(chunk){ //converted image + resultmetadata, sent as a series of chunks
       if(chunk.meta !== undefined ){
@@ -49,7 +49,7 @@ module.exports.executeConversion = async function executeConversion(originalFile
 
     connection.write({meta: {file_type_origin: originalFormat, file_type_target: newFormat}});
 
-    reader = fs.createReadStream('./task_images/'+originalFileName+'.'+originalFormat);
+    reader = fs.createReadStream('../task_images/'+originalFileName+'.'+originalFormat);
     
     reader.on('data', function (chunk) { // Read per chunk and send it to the gRPC service
       connection.write({file: chunk}); 

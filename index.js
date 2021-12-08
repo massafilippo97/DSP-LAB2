@@ -3,7 +3,7 @@
 var path = require('path');
 var http = require('http');
 var oas3Tools = require('oas3-tools');
-var serverPort = 8080;
+var serverPort = 3000;
 
 //declaration of the server controllers
 var LoginController = require(path.join(__dirname, 'controllers/Login')); 
@@ -23,7 +23,7 @@ var expressAppConfig = oas3Tools.expressAppConfig(path.join(__dirname, 'api/open
 
 var app = expressAppConfig.getApp();
 
-const { passport, opts, jwtstrategy } = require('./passport.js');  
+const { passport, opts, jwtstrategy } = require('./components/passport.js');  
 app.use(passport.initialize());
 
 
@@ -61,11 +61,6 @@ const storage = multer.diskStorage({
 const upload = multer({storage : storage}); 
 
 
-app.post('/api/login', LoginController.loginPOST);
-//app.delete('/api/login', LoginController.loginDELETE);
-
-app.get('/api/users/:userId', passport.authenticate('jwt', {session: false}), UsersController.usersIdGET);
-
 app.get('/api/tasks',passport.authenticate('jwt', {session: false}), TasksController.tasksGET);
 app.get('/api/tasks/public', TasksController.tasksPublicGET); //unica chiamata get publica
 app.get('/api/tasks/assignedToMe',passport.authenticate('jwt', {session: false}), TasksController.tasksAssignedToMeGET);
@@ -81,14 +76,19 @@ app.get('/api/tasks/:taskId/assignedTo', passport.authenticate('jwt', {session: 
 app.put('/api/tasks/:taskId/assignedTo/:userId', passport.authenticate('jwt', {session: false}), AssignedTasksController.tasksTaskIdAssignedToUserIdPUT);
 app.delete('/api/tasks/:taskId/assignedTo/:userId', passport.authenticate('jwt', {session: false}), AssignedTasksController.tasksTaskIdAssignedToUserIdDELETE);
 
- 
-
+// req.file is the name of your file in the form above, here 'uploaded_file'
+// req.body will hold the text fields, if there were any
 //app.get('/api/tasks/:taskId/images', passport.authenticate('jwt', {session: false}), TaskImagesController.tasksTaskIdImagesGET);
 app.get('/api/tasks/:taskId/images/:imageId', passport.authenticate('jwt', {session: false}), TaskImagesController.tasksTaskIdImagesImageIdGET);
 app.post('/api/tasks/:taskId/images', passport.authenticate('jwt', {session: false}), upload.single('uploadedImage'), TaskImagesController.tasksTaskIdImagesPOST);
-// req.file is the name of your file in the form above, here 'uploaded_file'
-// req.body will hold the text fields, if there were any
 app.delete('/api/tasks/:taskId/images/:imageId', passport.authenticate('jwt', {session: false}), TaskImagesController.tasksTaskIdImagesImageIdDELETE);
+
+app.post('/api/login', LoginController.loginPOST);
+app.post('/api/logout',passport.authenticate('jwt', {session: false}), LoginController.logoutPOST); 
+
+app.get('/api/users', passport.authenticate('jwt', { session: false }), UsersController.usersGET);
+app.get('/api/users/:userId', passport.authenticate('jwt', {session: false}), UsersController.usersIdGET);
+//app.put('/api/users/:userId/selection', passport.authenticate('jwt', { session: false }), assignmentController.selectTask);
 
 // Initialize the Swagger middleware
 http.createServer(app).listen(serverPort, function () {

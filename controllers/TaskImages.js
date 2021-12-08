@@ -3,7 +3,7 @@
 //var utils = require('../utils/writer.js');
 var Tasks = require('../service/TasksService');
 var TaskImages = require('../service/TaskImagesService');
-var conversionService = require('../gRPC_converter.js');  
+var conversionService = require('../components/gRPC_converter.js');  
 var fs = require('fs');
 const path = require('path');
 
@@ -58,7 +58,7 @@ module.exports.tasksTaskIdImagesImageIdDELETE = async function tasksTaskIdImages
         let newFormat = req.header('accept').substring(6);
 
         if(newFormat !== 'jpeg' && newFormat !== 'gif' && newFormat !== 'png')
-          throw new Error('406'); //Not acceptable 
+          throw new Error('415'); //Unsupported Media Type 
 
         newFormat = newFormat === 'jpeg' ? 'jpg' : newFormat;
 
@@ -85,8 +85,8 @@ module.exports.tasksTaskIdImagesImageIdDELETE = async function tasksTaskIdImages
     } catch(err) {
       if(err.message === '403')
         res.status(403).json({ error: "Forbidden: can't fetch because you are not the task's owner"});
-      if(err.message === '406')
-        res.status(406).json({ error: "Not acceptable: you can only request jpeg / jpg, png or gif image formats."});
+      if(err.message === '415')
+        res.status(415).json({ error: "Unsupported Media Type: you can only request jpeg / jpg, png or gif image formats."});
       else if(err === "taskId not found")
         res.status(404).json({ error: "Task Not found: can't fetch because the inserted task id does not exists"}); 
       else {

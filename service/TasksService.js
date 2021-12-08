@@ -1,7 +1,21 @@
 'use strict';
 
 // open the database 
-const db = require('../db.js');
+const db = require('../components/db.js');
+
+const links = { 
+  tasks: {href: "http://localhost:8080/tasks", methods: ["GET", "POST"]},
+  publicTasks: {href: "http://localhost:8080/tasks/public", methods: ["GET"]},
+  createdByMeTasks: {href: "http://localhost:8080/tasks/createdByMe", methods: ["GET"]},
+  assignedToMeTasks: {href: "http://localhost:8080/tasks/assignedToMe", methods: ["GET"]},
+  task: {href: "http://localhost:8080/tasks/{taskId}", methods: ["GET", "DELETE"]},
+  assignedTo: {href: "http://localhost:8080/tasks/{taskId}/assignedTo[/{userId}]", methods: ["GET", "POST", "DELETE"]},
+  markTask: {href: "http://localhost:8080/tasks/{taskId}/markTask", methods: ["PUT"]},
+  users: {href: "http://localhost:8080/users/", methods: ["GET" ]},
+  user: {href: "http://localhost:8080/users/{userId}", methods: ["GET"]},
+  login: {href: "http://localhost:8080/login", methods: ["POST"]},
+  logout: {href: "http://localhost:8080/logout", methods: ["POST"]}
+};
 
 /**
  * Retrieve all the tasks
@@ -14,22 +28,6 @@ exports.tasksGET = function(user_id, page, size) {
     //let sql_query = ""; 
     let sql_query = "SELECT t.id, t.description, t.important, t.private, t.project, t.deadline, t.completed, t.owner FROM assignments a, tasks t WHERE t.id = a.task AND a.user = ? UNION SELECT * FROM tasks WHERE owner = ? UNION SELECT * FROM tasks WHERE owner = ?;";
     //https://sqlite.org/lang_datefunc.html
-/*    
-    switch(filter){ //if authenticated (cioè se user_id è != null)
-      case 'public':
-        sql_query = "SELECT * FROM tasks WHERE private = 0;"; //tanto includerà automaticamente anche assignedToMe public e createdByMe public [ed i public del singolo utente]
-        break;
-      case 'assignedToMe':
-        sql_query = "SELECT t.id, t.description, t.important, t.private, t.project, t.deadline, t.completed, t.owner FROM assignments a, tasks t WHERE t.id = a.task AND user = ?;"
-        break;
-      case 'createdByMe':
-        sql_query = "SELECT * FROM tasks WHERE owner = ?;";   
-        break;
-      default: 
-        sql_query = "SELECT t.id, t.description, t.important, t.private, t.project, t.deadline, t.completed, t.owner FROM assignments a, tasks t WHERE t.id = a.task AND a.user = ? UNION SELECT * FROM tasks WHERE owner = ? UNION SELECT * FROM tasks WHERE owner = ?;" //union delle assignedToMe e createdByMe queries+ restanti tasks public
-        break; 
-    }
- */
 
     db.all(sql_query, [user_id, user_id, user_id], (err, rows) =>{ 
       if(err) {
@@ -41,7 +39,12 @@ exports.tasksGET = function(user_id, page, size) {
         size = rows.length;
       }
 
-      resolve(rows.map((row) => ({ 
+      let totalPages =  Math.ceil(rows.length / size);
+      if(page > totalPages) {
+        page = totalPages;
+      }
+
+      let tasks = rows.map((row) => ({ 
         id: row.id, 
         description: row.description, 
         important: row.important, 
@@ -49,16 +52,19 @@ exports.tasksGET = function(user_id, page, size) {
         project: row.project, 
         deadline: row.deadline, 
         completed: row.completed, 
-        owner: row.owner,
-        _links: {
-          self: {href: "http://localhost:8080/tasks/"+row.id},
-          tasks: {href: "http://localhost:8080/tasks"},
-          user: {href: "http://localhost:8080/users/{userId}"},
-          assignedTo: {href: "http://localhost:8080/tasks/{taskId}/assignedTo"},
-          markTask: {href: "http://localhost:8080/tasks/{taskId}/markTask"},
-          login: {href: "http://localhost:8080/login"}
-        }
-      })).filter((row, index) => index >= parseInt(page)*parseInt(size) && index < (parseInt(page)+1) * parseInt(size)));
+        owner: row.owner
+      })).filter((row, index) => index >= (parseInt(page)-1)*parseInt(size) && index < parseInt(page) * parseInt(size));
+
+      let linksList = Object.assign({}, links);
+      delete linksList.tasks;
+
+      resolve({
+        totalPages: totalPages,
+        currentPage: page,
+        totalItems: rows.length,
+        tasks: tasks,
+        _links: { linksList }
+      });
     });
   });
 };
@@ -78,7 +84,35 @@ exports.tasksPublicGET = function(page, size) {
         size = rows.length;
       }
 
-      resolve(rows.map((row) => ({ 
+      let totalPages =  Math.ceil(rows.length / size);
+      if(page > totalPages) {
+        page = totalPages;
+      }
+
+      let tasks = rows.map((row) => ({ 
+        id: row.id, 
+        description: row.description, 
+        important: row.important, 
+        private: row.private, 
+        project: row.project, 
+        deadline: row.deadline, 
+        completed: row.completed, 
+        owner: row.owner
+      })).filter((row, index) => index >= (parseInt(page)-1)*parseInt(size) && index < parseInt(page) * parseInt(size));
+
+      let linksList = Object.assign({}, links);
+      delete linksList.publicTasks;
+      linksList.next = {href:"/api/tasks/public?pageNo=" + (page+1)%totalPages+1},
+
+      resolve({
+        totalPages: totalPages,
+        currentPage: page,
+        totalItems: rows.length,
+        tasks: tasks,
+        _links: { linksList }
+      });
+
+      /*resolve(rows.map((row) => ({ 
         id: row.id, 
         description: row.description, 
         important: row.important, 
@@ -93,9 +127,9 @@ exports.tasksPublicGET = function(page, size) {
           user: {href: "http://localhost:8080/users/{userId}"},
           assignedTo: {href: "http://localhost:8080/tasks/{taskId}/assignedTo"},
           markTask: {href: "http://localhost:8080/tasks/{taskId}/markTask"},
-          login: {href: "http://localhost:8080/login"}
+          logout: {href: "http://localhost:8080/logout"}
         }
-      })).filter((row, index) => index >= parseInt(page)*parseInt(size) && index < (parseInt(page)+1) * parseInt(size)));
+      })).filter((row, index) => index >= parseInt(page)*parseInt(size) && index < (parseInt(page)+1) * parseInt(size)));*/
     });
   });
 };
@@ -113,8 +147,13 @@ exports.tasksAssignedToMeGET = function(user_id, page, size) {
       if(size === -1){ 
         size = rows.length;
       }
+ 
+      let totalPages =  Math.ceil(rows.length / size);
+      if(page > totalPages) {
+        page = totalPages;
+      }
 
-      resolve(rows.map((row) => ({ 
+      let tasks = rows.map((row) => ({ 
         id: row.id, 
         description: row.description, 
         important: row.important, 
@@ -123,15 +162,19 @@ exports.tasksAssignedToMeGET = function(user_id, page, size) {
         deadline: row.deadline, 
         completed: row.completed, 
         owner: row.owner,
-        _links: {
-          self: {href: "http://localhost:8080/tasks/"+row.id},
-          tasks: {href: "http://localhost:8080/tasks"},
-          user: {href: "http://localhost:8080/users/{userId}"},
-          assignedTo: {href: "http://localhost:8080/tasks/{taskId}/assignedTo"},
-          markTask: {href: "http://localhost:8080/tasks/{taskId}/markTask"},
-          login: {href: "http://localhost:8080/login"}
-        }
-      })).filter((row, index) => index >= parseInt(page)*parseInt(size) && index < (parseInt(page)+1) * parseInt(size)));
+      })).filter((row, index) => index >= (parseInt(page)-1)*parseInt(size) && index < parseInt(page) * parseInt(size));
+
+      let linksList = Object.assign({}, links);
+      delete linksList.assignedToMeTasks;
+      linksList.next = {href:"/api/tasks/assignedToMe?pageNo=" + (page+1)%totalPages+1},
+
+      resolve({
+        totalPages: totalPages,
+        currentPage: page,
+        totalItems: rows.length,
+        tasks: tasks, 
+        _links: { linksList }
+      });
     });
   });
 };
@@ -150,7 +193,12 @@ exports.tasksCreatedByMeGET = function(user_id, page, size) {
         size = rows.length;
       }
 
-      resolve(rows.map((row) => ({ 
+      let totalPages =  Math.ceil(rows.length / size);
+      if(page > totalPages) {
+        page = totalPages;
+      }
+
+      let tasks = rows.map((row) => ({ 
         id: row.id, 
         description: row.description, 
         important: row.important, 
@@ -159,15 +207,19 @@ exports.tasksCreatedByMeGET = function(user_id, page, size) {
         deadline: row.deadline, 
         completed: row.completed, 
         owner: row.owner,
-        _links: {
-          self: {href: "http://localhost:8080/tasks/"+row.id},
-          tasks: {href: "http://localhost:8080/tasks"},
-          user: {href: "http://localhost:8080/users/{userId}"},
-          assignedTo: {href: "http://localhost:8080/tasks/{taskId}/assignedTo"},
-          markTask: {href: "http://localhost:8080/tasks/{taskId}/markTask"},
-          login: {href: "http://localhost:8080/login"}
-        }
-      })).filter((row, index) => index >= parseInt(page)*parseInt(size) && index < (parseInt(page)+1) * parseInt(size)));
+      })).filter((row, index) => index >= (parseInt(page)-1)*parseInt(size) && index < parseInt(page) * parseInt(size));
+
+      let linksList = Object.assign({}, links);
+      delete linksList.createdByMeTasks;
+      linksList.next = {href:"/api/tasks/createdByMe?pageNo=" + (page+1)%totalPages+1},
+
+      resolve({
+        totalPages: totalPages,
+        currentPage: page,
+        totalItems: rows.length,
+        tasks: tasks, 
+        _links: { linksList }
+      });
     });
   });
 };
@@ -187,23 +239,22 @@ exports.tasksPOST = function(body, user_id, max_id) { //body == new task
         reject(err);
         return;
       }
+
+      let linksList = Object.assign({}, links);
+      linksList.self = {href: "http://localhost:8080/tasks/"+max_id};
+
       resolve({ 
-        id: max_id, 
-        description: body.description, 
-        important: body.important, 
-        private: body.private, 
-        project: body.project, 
-        deadline: body.deadline, 
-        completed: body.completed, 
-        owner: user_id,
-        _links: {
-          self: {href: "http://localhost:8080/tasks/"+max_id},
-          tasks: {href: "http://localhost:8080/tasks"},
-          user: {href: "http://localhost:8080/users/{userId}"},
-          assignedTo: {href: "http://localhost:8080/tasks/{taskId}/assignedTo"},
-          markTask: {href: "http://localhost:8080/tasks/{taskId}/markTask"},
-          login: {href: "http://localhost:8080/login"}
-        }
+        task: {
+          id: max_id, 
+          description: body.description, 
+          important: body.important, 
+          private: body.private, 
+          project: body.project, 
+          deadline: body.deadline, 
+          completed: body.completed, 
+          owner: user_id,
+         },
+        _links: { linksList }
       });
     });
   });
@@ -288,23 +339,22 @@ exports.tasksTaskIdGET = function(taskId, userId) {
         reject("taskId not found");
         return;
       } 
+
+      let linksList = Object.assign({}, links);
+      delete linksList.task;
+
       resolve(rows.map((row) => ({ 
-        id: row.id, 
-        description: row.description, 
-        important: row.important, 
-        private: row.private, 
-        project: row.project, 
-        deadline: row.deadline, 
-        completed: row.completed, 
-        owner: row.owner,
-        _links: {
-          self: {href: "http://localhost:8080/tasks/"+row.id},
-          tasks: {href: "http://localhost:8080/tasks"},
-          user: {href: "http://localhost:8080/users/{userId}"},
-          assignedTo: {href: "http://localhost:8080/tasks/{taskId}/assignedTo"},
-          markTask: {href: "http://localhost:8080/tasks/{taskId}/markTask"},
-          login: {href: "http://localhost:8080/login"}
-        }
+        task: {
+          id: row.id, 
+          description: row.description, 
+          important: row.important, 
+          private: row.private, 
+          project: row.project, 
+          deadline: row.deadline, 
+          completed: row.completed, 
+          owner: row.owner
+        },
+        _links: { linksList }
       })));
     });
   });

@@ -5,7 +5,7 @@ var Tasks = require('../service/TasksService');
 
 module.exports.tasksGET = function tasksGET (req, res, next) {
   Tasks.tasksGET( req.user.id, //req.user.id
-                  req.query.page > 0 ? req.query.page: 0, 
+                  req.query.pageNo > 0 ? req.query.pageNo: 1, 
                   req.query.size > 0 ? req.query.size: -1) 
     .then(function (response) {
       utils.writeJson(res, response);
@@ -16,7 +16,7 @@ module.exports.tasksGET = function tasksGET (req, res, next) {
 };
 
 module.exports.tasksPublicGET = function tasksPublicGET (req, res, next) { //chiamata api pubblica
-  Tasks.tasksPublicGET( req.query.page > 0 ? req.query.page: 0, 
+  Tasks.tasksPublicGET( req.query.pageNo > 0 ? req.query.pageNo: 1, 
                         req.query.size > 0 ? req.query.size: -1) 
     .then(function (response) {
       utils.writeJson(res, response);
@@ -28,7 +28,7 @@ module.exports.tasksPublicGET = function tasksPublicGET (req, res, next) { //chi
 
 module.exports.tasksAssignedToMeGET = function tasksAssignedToMeGET (req, res, next) {
   Tasks.tasksAssignedToMeGET( req.user.id, //req.user.id
-                              req.query.page > 0 ? req.query.page: 0, 
+                              req.query.pageNo > 0 ? req.query.pageNo: 1, 
                               req.query.size > 0 ? req.query.size: -1) 
     .then(function (response) {
       utils.writeJson(res, response);
@@ -40,7 +40,7 @@ module.exports.tasksAssignedToMeGET = function tasksAssignedToMeGET (req, res, n
 
 module.exports.tasksCreatedByMeGET = function tasksCreatedByMeGET (req, res, next) {
   Tasks.tasksCreatedByMeGET( req.user.id, //req.user.id
-                             req.query.page > 0 ? req.query.page: 0, 
+                             req.query.pageNo > 0 ? req.query.pageNo: 1, 
                              req.query.size > 0 ? req.query.size: -1) 
     .then(function (response) {
       utils.writeJson(res, response);

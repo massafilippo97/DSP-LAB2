@@ -1,7 +1,9 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "LAB1/ToDoManagerSchema.json",
-
+    "$id": "LAB/UserSchema.json",
+    "title": "User",
+    "description": "JSON Schema for User objects", 
+    "additionalProperties": false,
     "type": "object",
     "properties": {
         "users": {
